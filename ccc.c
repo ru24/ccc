@@ -25,14 +25,22 @@ struct Token{
 //finding token
 Token *token;
 
-//function is order to call error. 
-void error(char *fmt, ...){
+//column num of input
+char *user_input;
+
+//inform error position.//function is order to call error. 
+void error_at(char *loc, char *fmt, ...){
     va_list ap;
     va_start(ap, fmt);
+
+    int pos = loc - user_input;
+    fprintf(stderr, "%s\n", user_input);
+    fprintf(stderr, "%*s", pos, "");// pos spaces
+    fprintf(stderr, "^ ");
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
     exit(1);
-} 
+}
 
 // next token judge
 bool consume(char op){
@@ -46,7 +54,7 @@ bool consume(char op){
 // next token judge, error
 void expect(char op){
     if(token->kind != TK_RESERVED || token->str[0] != op){
-        error("it is not '%c'", op);
+        error_at(token->str, "it is not '%c'", op);
     }
     token = token->next;
 }
@@ -54,7 +62,7 @@ void expect(char op){
 // next token is NUM,
 int expect_num(){
     if(token->kind != TK_NUM){
-        error("it is not NUM");
+        error_at(token->str, "it is not NUM");
     }
     int val = token->val;
     token = token->next;
@@ -76,7 +84,8 @@ Token *new_token(TokenKind kind, Token *cur, char *str){
 }
 
 //tokenize string.and retrun head.next(head is empty)
-Token *tokenize(char *p){
+Token *tokenize(){
+    char *p = user_input;
     Token head;
     head.next = NULL;
     Token *cur = &head;
@@ -98,7 +107,7 @@ Token *tokenize(char *p){
             cur->val = strtol(p, &p, 10);
             continue;
         }
-        error("can't tokenize");
+        error_at(token->str, "can't tokenize");
     }
     new_token(TK_EOF, cur, p);//add eof at the end of tokenize
     return head.next;
@@ -111,7 +120,8 @@ int main(int argc, char **argv){
     }
 
     // tokenize
-    token = tokenize(argv[1]);
+    user_input = argv[1];
+    token = tokenize();
 
     printf(".intel_syntax noprefix\n");
     printf(".globl main\n");
